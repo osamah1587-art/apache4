@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="APACHE IV">
+<meta name="theme-color" content="#00d4ff">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>APACHE IV — KAMC ICU</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #ff4757;
+    --accent3: #2ed573;
+    --warn: #ffa502;
+    --text: #e8edf5;
+    --text-dim: #8899aa;
+    --text-muted: #445566;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overscroll-behavior: none;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* APP SHELL */
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: calc(var(--safe-top) + 12px) 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar-left { display: flex; flex-direction: column; }
+
+  .topbar-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .topbar-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .topbar-title span { color: var(--accent); }
+
+  .score-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    text-align: center;
+    min-width: 70px;
+  }
+
+  .score-badge .val {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .score-badge .lbl {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    margin-top: 2px;
+  }
+
+  /* SCROLL CONTENT */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 14px calc(var(--safe-bottom) + 100px);
+  }
+
+  /* SECTION */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* FIELDS */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .field { margin-bottom: 10px; }
+
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  label .unit { color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  input[type="number"], select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 10px 12px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="number"]:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  select { background-image: none; }
+  select option { background: #1a2235; }
+
+  input::-webkit-inner-spin-button,
+  input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  /* GCS */
+  .gcs-total {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    margin-top: 6px;
+    grid-column: span 3;
+  }
+
+  .gcs-hint {
+    font-size: 8px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    display: block;
+    line-height: 1.4;
+  }
+
+  /* BOTTOM ACTION BAR */
+  .bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 14px calc(var(--safe-bottom) + 12px);
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+  }
+
+  .btn-calc {
+    flex: 1;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+
+  .btn-calc:active { opacity: 0.85; transform: scale(0.98); }
+
+  .btn-reset {
+    background: var(--surface2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .btn-reset:active { border-color: var(--accent2); }
+
+  /* RESULT MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 0 16px calc(var(--safe-bottom) + 20px);
+    animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 12px auto 16px;
+  }
+
+  .modal-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .result-big {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .result-big .num {
+    font-family: var(--mono);
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .result-big .sev {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .result-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .result-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .result-box .v {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .result-box .l {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Risk bar */
+  .risk-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .risk-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .risk-track {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+
+  .risk-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent3), var(--warn), var(--accent2));
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .risk-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--text-muted);
+  }
+
+  /* Breakdown */
+  .breakdown-toggle {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+
+  .breakdown {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .breakdown.open { display: block; }
+
+  .bd-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .bd-row:last-child { border-bottom: none; }
+  .bd-pts { font-weight: 700; }
+  .bd-pts.pos { color: var(--accent2); }
+  .bd-pts.zero { color: var(--text-muted); }
+
+  .btn-close {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 14px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .disclaimer {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 10px;
+    line-height: 1.7;
+    padding-bottom: 4px;
+  }
+
+  /* Install banner */
+  .install-banner {
+    background: linear-gradient(135deg, #0d1f35, #0a2040);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .install-text {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .install-text strong { color: var(--accent); display: block; font-size: 11px; margin-bottom: 2px; }
+
+  .btn-install {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .btn-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-tag">KAMC · Critical Care</div>
+      <div class="topbar-title">APACHE <span>IV</span></div>
+    </div>
+    <div class="score-badge">
+      <div class="val" id="liveBadge">—</div>
+      <div class="lbl">SCORE</div>
+    </div>
+  </div>
+
+  <!-- SCROLL CONTENT -->
+  <div class="scroll-area">
+
+    <!-- Install banner -->
+    <div class="install-banner" id="installBanner" style="display:none;">
+      <div class="install-text">
+        <strong>📲 Install as App</strong>
+        Add to Home Screen for offline access
+      </div>
+      <button class="btn-install" id="installBtn">Install</button>
+      <button class="btn-dismiss" onclick="document.getElementById('installBanner').style.display='none'">×</button>
+    </div>
+
+    <!-- DEMOGRAPHICS -->
+    <div class="section">
+      <div class="section-title">Demographics & Admission</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Age <span class="unit">(years)</span></label>
+          <input type="number" id="age" inputmode="numeric" placeholder="65">
+        </div>
+        <div class="field">
+          <label>Admission Type</label>
+          <select id="admType">
+            <option value="">— Select —</option>
+            <option value="med">Medical</option>
+            <option value="surg_elec">Surgical Elective</option>
+            <option value="surg_emer">Surgical Emergency</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Admitted From</label>
+          <select id="admFrom">
+            <option value="">— Select —</option>
+            <option value="er">ER</option>
+            <option value="or">OR</option>
+            <option value="ward">Ward</option>
+            <option value="icu">ICU Transfer</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Intubated?</label>
+          <select id="intubated">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- VITALS -->
+    <div class="section">
+      <div class="section-title">Vitals — Worst 24h</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Temp <span class="unit">(°C)</span></label>
+          <input type="number" id="temp" inputmode="decimal" step="0.1" placeholder="37.0">
+        </div>
+        <div class="field">
+          <label>MAP <span class="unit">(mmHg)</span></label>
+          <input type="number" id="map" inputmode="numeric" placeholder="80">
+        </div>
+        <div class="field">
+          <label>HR <span class="unit">(bpm)</span></label>
+          <input type="number" id="hr" inputmode="numeric" placeholder="90">
+        </div>
+        <div class="field">
+          <label>RR <span class="unit">(br/min)</span></label>
+          <input type="number" id="rr" inputmode="numeric" placeholder="18">
+        </div>
+      </div>
+    </div>
+
+    <!-- OXYGENATION -->
+    <div class="section">
+      <div class="section-title">Oxygenation</div>
+      <div class="grid3">
+        <div class="field">
+          <label>FiO₂</label>
+          <input type="number" id="fio2" inputmode="decimal" step="0.01" placeholder="0.21">
+        </div>
+        <div class="field">
+          <label>PaO₂ <span class="unit">mmHg</span></label>
+          <input type="number" id="pao2" inputmode="numeric" placeholder="if &lt;0.5">
+        </div>
+        <div class="field">
+          <label>PaCO₂ <span class="unit">mmHg</span></label>
+          <input type="number" id="paco2" inputmode="numeric" placeholder="40">
+        </div>
+      </div>
+      <div class="field">
+        <label>A-aDO₂ <span class="unit">(if FiO₂ ≥ 0.5)</span></label>
+        <input type="number" id="aado2" inputmode="numeric" placeholder="leave blank if FiO₂ &lt; 0.5">
+      </div>
+    </div>
+
+    <!-- LABS -->
+    <div class="section">
+      <div class="section-title">Laboratory</div>
+      <div class="grid2">
+        <div class="field">
+          <label>pH</label>
+          <input type="number" id="ph" inputmode="decimal" step="0.01" placeholder="7.40">
+        </div>
+        <div class="field">
+          <label>Na <span class="unit">(mEq/L)</span></label>
+          <input type="number" id="na" inputmode="numeric" placeholder="140">
+        </div>
+        <div class="field">
+          <label>Creatinine <span class="unit">(mg/dL)</span></label>
+          <input type="number" id="cr" inputmode="decimal" step="0.1" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label>BUN <span class="unit">(mg/dL)</span></label>
+          <input type="number" id="bun" inputmode="numeric" placeholder="20">
+        </div>
+        <div class="field">
+          <label>Hematocrit <span class="unit">(%)</span></label>
+          <input type="number" id="hct" inputmode="numeric" placeholder="38">
+        </div>
+        <div class="field">
+          <label>WBC <span class="unit">(×10³)</span></label>
+          <input type="number" id="wbc" inputmode="decimal" step="0.1" placeholder="10">
+        </div>
+        <div class="field">
+          <label>Glucose <span class="unit">(mg/dL)</span></label>
+          <input type="number" id="glucose" inputmode="numeric" placeholder="120">
+        </div>
+        <div class="field">
+          <label>Albumin <span class="unit">(g/dL)</span></label>
+          <input type="number" id="albumin" inputmode="decimal" step="0.1" placeholder="3.5">
+        </div>
+        <div class="field">
+          <label>Bilirubin <span class="unit">(mg/dL)</span></label>
+          <input type="number" id="bili" inputmode="decimal" step="0.1" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label>UO <span class="unit">(mL/24h)</span></label>
+          <input type="number" id="uo" inputmode="numeric" placeholder="1500">
+        </div>
+      </div>
+    </div>
+
+    <!-- GCS -->
+    <div class="section">
+      <div class="section-title">GCS — Worst 24h</div>
+      <div class="grid3">
+        <div class="field">
+          <label>Eyes <span class="unit">1–4</span></label>
+          <input type="number" id="gcsE" inputmode="numeric" min="1" max="4" placeholder="4" oninput="updateGCS()">
+          <span class="gcs-hint">1=None 2=Pain<br>3=Voice 4=Spon</span>
+        </div>
+        <div class="field">
+          <label>Verbal <span class="unit">1–5</span></label>
+          <input type="number" id="gcsV" inputmode="numeric" min="1" max="5" placeholder="5" oninput="updateGCS()">
+          <span class="gcs-hint">1=None 3=Words<br>5=Oriented</span>
+        </div>
+        <div class="field">
+          <label>Motor <span class="unit">1–6</span></label>
+          <input type="number" id="gcsM" inputmode="numeric" min="1" max="6" placeholder="6" oninput="updateGCS()">
+          <span class="gcs-hint">1=None 3=Flex<br>6=Obeys</span>
+        </div>
+        <div class="gcs-total">GCS: <span id="gcsTotal">—</span></div>
+      </div>
+    </div>
+
+    <!-- CHRONIC HEALTH -->
+    <div class="section">
+      <div class="section-title">Chronic Health</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Immunocompromised</label>
+          <select id="immune"><option value="no">No</option><option value="yes">Yes (+4)</option></select>
+        </div>
+        <div class="field">
+          <label>Metastatic Cancer</label>
+          <select id="mets"><option value="no">No</option><option value="yes">Yes (+6)</option></select>
+        </div>
+        <div class="field">
+          <label>Hematologic Malignancy</label>
+          <select id="hemMalig"><option value="no">No</option><option value="yes">Yes (+4)</option></select>
+        </div>
+        <div class="field">
+          <label>Hepatic Failure</label>
+          <select id="hepatic"><option value="no">No</option><option value="yes">Yes (+4)</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      APACHE IV · Zimmerman et al. 2006 · Clinical reference only<br>
+      KAMC Critical Care Medicine · ICU Decision Support
+    </div>
+
+  </div><!-- end scroll -->
+
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar">
+    <button class="btn-reset" onclick="resetAll()">↺ RESET</button>
+    <button class="btn-calc" onclick="calculate()">▶ CALCULATE</button>
+  </div>
+
+</div><!-- end app -->
+
+<!-- RESULT MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">APACHE IV · Result</div>
+
+    <div class="result-big">
+      <div class="num" id="rScore">—</div>
+      <div class="sev" id="rSev">—</div>
+    </div>
+
+    <div class="result-row">
+      <div class="result-box">
+        <div class="v" id="rMort">—</div>
+        <div class="l">Predicted Mortality</div>
+      </div>
+      <div class="result-box">
+        <div class="v" id="rLOS">—</div>
+        <div class="l">Predicted LOS</div>
+      </div>
+    </div>
+
+    <div class="risk-wrap">
+      <div class="risk-label">Mortality Risk</div>
+      <div class="risk-track">
+        <div class="risk-fill" id="rBar" style="width:0%"></div>
+      </div>
+      <div class="risk-ticks">
+        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+      </div>
+    </div>
+
+    <button class="breakdown-toggle" onclick="toggleBD()">▼ Show Point Breakdown</button>
+    <div class="breakdown" id="bdPanel"></div>
+
+    <button class="btn-close" onclick="document.getElementById('modalOverlay').classList.remove('open')">✕ CLOSE</button>
+  </div>
+</div>
+
+<script>
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// PWA Install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').style.display = 'none';
+});
+
+function updateGCS() {
+  const e = parseInt(document.getElementById('gcsE').value)||0;
+  const v = parseInt(document.getElementById('gcsV').value)||0;
+  const m = parseInt(document.getElementById('gcsM').value)||0;
+  document.getElementById('gcsTotal').textContent = (e&&v&&m) ? e+v+m : '—';
+}
+
+function getVal(id) {
+  const v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? null : v;
+}
+
+function getSelect(id) { return document.getElementById(id).value; }
+
+const scoring = {
+  temp: t => !t?0: t>=40?4: t>=38.5?3: t>=36?0: t>=34?2: t>=32?3: t>=30?4:4,
+  map:  m => !m?0: m>=160?4: m>=130?3: m>=110?2: m>=70?0: m>=50?2:4,
+  hr:   h => !h?0: h>=180?4: h>=140?3: h>=110?2: h>=70?0: h>=55?2: h>=40?3:4,
+  rr:   r => !r?0: r>=50?4: r>=35?3: r>=25?1: r>=12?0: r>=10?1: r>=6?2:4,
+  ph:   p => !p?0: p>=7.7?4: p>=7.6?3: p>=7.5?1: p>=7.33?0: p>=7.25?2: p>=7.15?3:4,
+  na:   n => !n?0: n>=180?4: n>=160?3: n>=155?2: n>=150?1: n>=130?0: n>=120?2:4,
+  cr:   c => !c?0: c>=3.5?4: c>=2?3: c>=1.5?2: c>=0.6?0:2,
+  bun:  b => !b?0: b>=100?4: b>=60?3: b>=30?1:0,
+  hct:  h => !h?0: h>=60?4: h>=50?2: h>=46?1: h>=30?0: h>=20?2:4,
+  wbc:  w => !w?0: w>=40?4: w>=20?2: w>=15?1: w>=3?0: w>=1?2:4,
+  glu:  g => !g?0: g>=500?4: g>=300?3: g>=200?2: g>=70?0: g>=55?2:4,
+  alb:  a => !a?0: a>=4.5?0: a>=3?1: a>=2?3:4,
+  bili: b => !b?0: b>=12?4: b>=6?3: b>=3?2:0,
+  uo:   u => u===null?0: u<400?4: u<600?3: u<900?2:0,
+  oxy: (fio2,pao2,aado2) => {
+    if(!fio2) return 0;
+    if(fio2>=0.5) { if(!aado2) return 0; return aado2>=500?4:aado2>=350?3:aado2>=200?2:0; }
+    else { if(!pao2) return 0; return pao2>70?0:pao2>=61?1:pao2>=55?3:4; }
+  },
+  age: a => !a?0: a>=75?6: a>=65?5: a>=55?3: a>=45?2:0,
+};
+
+function predMort(s) {
+  return (100/(1+Math.exp(3.517-0.146*s))).toFixed(1);
+}
+
+function calculate() {
+  const age=getVal('age'), temp=getVal('temp'), map=getVal('map'), hr=getVal('hr'), rr=getVal('rr');
+  const fio2=getVal('fio2'), pao2=getVal('pao2'), aado2=getVal('aado2');
+  const ph=getVal('ph'), na=getVal('na'), cr=getVal('cr'), bun=getVal('bun');
+  const hct=getVal('hct'), wbc=getVal('wbc'), glucose=getVal('glucose');
+  const albumin=getVal('albumin'), bili=getVal('bili'), uo=getVal('uo');
+  const e=parseInt(document.getElementById('gcsE').value)||0;
+  const v=parseInt(document.getElementById('gcsV').value)||0;
+  const m=parseInt(document.getElementById('gcsM').value)||0;
+  const gcs=(e&&v&&m)?e+v+m:null;
+  const immune=getSelect('immune'), mets=getSelect('mets');
+  const hemMalig=getSelect('hemMalig'), hepatic=getSelect('hepatic');
+
+  const bd = {
+    'Temperature': scoring.temp(temp),
+    'MAP': scoring.map(map),
+    'Heart Rate': scoring.hr(hr),
+    'Resp Rate': scoring.rr(rr),
+    'Oxygenation': scoring.oxy(fio2,pao2,aado2),
+    'pH': scoring.ph(ph),
+    'Sodium': scoring.na(na),
+    'Creatinine': scoring.cr(cr),
+    'BUN': scoring.bun(bun),
+    'Hematocrit': scoring.hct(hct),
+    'WBC': scoring.wbc(wbc),
+    'Glucose': scoring.glu(glucose),
+    'Albumin': scoring.alb(albumin),
+    'Bilirubin': scoring.bili(bili),
+    'Urine Output': scoring.uo(uo),
+    'GCS (15−total)': gcs ? 15-gcs : 0,
+    'Age': scoring.age(age),
+    'Immunocompromised': immune==='yes'?4:0,
+    'Metastatic Cancer': mets==='yes'?6:0,
+    'Hematologic Malig': hemMalig==='yes'?4:0,
+    'Hepatic Failure': hepatic==='yes'?4:0,
+  };
+
+  const total = Object.values(bd).reduce((a,b)=>a+b,0);
+  const mort = predMort(total);
+  const los = Math.max(1,(1.5+total*0.18)).toFixed(1);
+
+  let sev, sevColor;
+  if(total<25){sev='Low Severity';sevColor='var(--accent3)';}
+  else if(total<50){sev='Moderate';sevColor='var(--warn)';}
+  else if(total<75){sev='High Severity';sevColor='var(--accent2)';}
+  else{sev='Critical';sevColor='var(--accent2)';}
+
+  // Update live badge
+  document.getElementById('liveBadge').textContent = total;
+  document.getElementById('liveBadge').style.color = sevColor;
+
+  // Modal
+  document.getElementById('rScore').textContent = total;
+  document.getElementById('rScore').style.color = sevColor;
+  document.getElementById('rSev').textContent = sev;
+  document.getElementById('rSev').style.color = sevColor;
+  document.getElementById('rMort').textContent = mort+'%';
+  document.getElementById('rMort').style.color = parseFloat(mort)>40?'var(--accent2)':parseFloat(mort)>20?'var(--warn)':'var(--accent3)';
+  document.getElementById('rLOS').textContent = los+'d';
+  document.getElementById('rBar').style.width = Math.min(100,parseFloat(mort))+'%';
+
+  // Breakdown
+  let html = '';
+  for(const [k,pts] of Object.entries(bd)){
+    html += `<div class="bd-row"><span>${k}</span><span class="bd-pts ${pts?'pos':'zero'}">${pts>0?'+':''}${pts}</span></div>`;
+  }
+  html += `<div class="bd-row" style="color:var(--text);font-weight:700;border-top:1px solid var(--accent);padding-top:8px;margin-top:4px;"><span>TOTAL</span><span class="bd-pts" style="color:${sevColor}">${total}</span></div>`;
+  document.getElementById('bdPanel').innerHTML = html;
+  document.getElementById('bdPanel').classList.remove('open');
+  document.querySelector('.breakdown-toggle').textContent = '▼ Show Point Breakdown';
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function toggleBD(){
+  const panel = document.getElementById('bdPanel');
+  const btn = document.querySelector('.breakdown-toggle');
+  panel.classList.toggle('open');
+  btn.textContent = panel.classList.contains('open') ? '▲ Hide Breakdown' : '▼ Show Point Breakdown';
+}
+
+function closeModal(e){
+  if(e.target === document.getElementById('modalOverlay'))
+    document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function resetAll(){
+  document.querySelectorAll('input[type="number"]').forEach(i=>i.value='');
+  document.querySelectorAll('select').forEach(s=>s.selectedIndex=0);
+  document.getElementById('gcsTotal').textContent='—';
+  document.getElementById('liveBadge').textContent='—';
+  document.getElementById('liveBadge').style.color='var(--accent)';
+}
+</script>
+</body>
+</html>
